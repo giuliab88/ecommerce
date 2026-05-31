@@ -1,0 +1,12 @@
+# Cartella immagini originali (già copiate in BlazorSampleCommerce-master/wwwroot/images)
+immagini per ecomm/
+
+# Visual Studio solution user file
+*.slnx.user
+
+# Visual Studio cache
+.vs/
+
+# Build artifacts (gestiti anche dai .gitignore dei sottoprogetti)
+[Bb]in/
+[Oo]bj/

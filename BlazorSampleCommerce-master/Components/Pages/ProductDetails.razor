@@ -1,0 +1,200 @@
+@page "/product/{Id}"
+@using BlazorSampleCommerce.DTOs
+@using System.Globalization
+@rendermode InteractiveServer
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject CartService CartService
+@inject NavigationManager NavManager
+
+<PageTitle>@(product?.Name ?? "Opera") — Archetipo</PageTitle>
+
+@if (product == null)
+{
+    <div class="loading-archetipo" style="min-height:100vh;justify-content:center">
+        <span class="text-caps" style="opacity:0.38">caricamento opera</span>
+        <div style="display:flex;gap:0.5rem;margin-top:1rem">
+            <div class="loading-dot"></div>
+            <div class="loading-dot" style="animation-delay:0.18s"></div>
+            <div class="loading-dot" style="animation-delay:0.36s"></div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="product-detail-wrap">
+
+        <div class="product-detail-image">
+            @if (!string.IsNullOrEmpty(product.ImageUrl))
+            {
+                <img src="@product.ImageUrl" alt="@product.Name" class="detail-img" />
+            }
+            else
+            {
+                <div class="detail-image-bg">
+                    <svg width="110" height="148" viewBox="0 0 110 148" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.16">
+                        <rect x="15" y="22" width="80" height="110" rx="2" stroke="#1a0f08" stroke-width="1.5"/>
+                        <line x1="15" y1="52" x2="95" y2="52" stroke="#1a0f08" stroke-width="0.8"/>
+                        <circle cx="55" cy="108" r="20" stroke="#1a0f08" stroke-width="0.8"/>
+                        <line x1="28" y1="6"  x2="82" y2="6"  stroke="#6b3f1e" stroke-width="3" stroke-linecap="round"/>
+                        <line x1="38" y1="0"  x2="72" y2="0"  stroke="#6b3f1e" stroke-width="1.5" stroke-linecap="round"/>
+                        <path d="M40 74 L48 86 L44 100 L55 114" stroke="#c9a07a" stroke-width="1" stroke-linecap="round"/>
+                        <path d="M68 60 L62 75 L70 88" stroke="#c9a07a" stroke-width="0.7" stroke-linecap="round" stroke-dasharray="3 2"/>
+                    </svg>
+                    <div class="detail-id-watermark">@Id</div>
+                </div>
+            }
+        </div>
+
+        <div class="product-detail-content">
+            <a href="/" class="detail-back-link detail-animate">← Collezione</a>
+
+            <div class="detail-emotion-label detail-animate">@product.Brand</div>
+            <h1 class="detail-name detail-animate">@product.Name</h1>
+            <p class="detail-desc detail-animate">@product.Description</p>
+
+            @if (product.StockKeepingUnits.Any())
+            {
+                <div class="detail-sku-list detail-animate">
+                    @foreach (var sku in product.StockKeepingUnits
+                        .GroupBy(s => s.Features.FirstOrDefault().Value ?? "Standard")
+                        .Select(g => g.First()))
+                    {
+                        var firstFeature = sku.Features.FirstOrDefault();
+                        <button class="detail-sku-btn @(selectedSku?.Id == sku.Id ? "selected" : "")"
+                                @onclick="() => SelectSku(sku)">
+                            @(firstFeature.Value ?? "Standard")
+                        </button>
+                    }
+                </div>
+            }
+
+            <div class="detail-price detail-animate">€ @selectedSku?.Price.ToString("0.00")</div>
+
+            @if (selectedSku?.Stock == 0)
+            {
+                <div style="font-family:var(--font-sans);font-size:0.72rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--sand);opacity:0.7;margin-bottom:1.5rem">
+                    Esaurito
+                </div>
+            }
+            else
+            {
+                <button class="btn-acquire detail-animate" @onclick="AddToCart" disabled="@isAddingToCart">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin-right:0.5rem;vertical-align:middle"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                    @(isAddingToCart ? "…" : "Aggiungi")
+                </button>
+            }
+
+            @if (selectedSku != null && selectedSku.Features.Any())
+            {
+                <div class="features-accordion detail-animate">
+                    <button class="features-toggle" @onclick="ToggleDropdown">
+                        <span>Materiali &amp; specifiche</span>
+                        <span>@(isDropdownOpen ? "−" : "+")</span>
+                    </button>
+                    @if (isDropdownOpen)
+                    {
+                        <div>
+                            @foreach (var feature in selectedSku.Features)
+                            {
+                                <div class="feature-row">
+                                    <span class="feature-key">@feature.Key</span>
+                                    <span class="feature-val">@feature.Value</span>
+                                </div>
+                            }
+                            <div class="feature-row">
+                                <span class="feature-key">Disponibilità</span>
+                                <span class="feature-val">@selectedSku.Stock unità</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="reviews-section">
+        <span class="text-caps" style="opacity:0.35;display:block;margin-bottom:2.5rem">Lascia un'impronta</span>
+
+        <div style="margin-bottom:1.75rem">
+            <label class="review-form-label">Intensità dell'emozione</label>
+            <select class="review-select" @bind="newReviewRate">
+                <option value="5">5 — Devastante</option>
+                <option value="4">4 — Profondo</option>
+                <option value="3">3 — Presente</option>
+                <option value="2">2 — Lieve</option>
+                <option value="1">1 — Distante</option>
+            </select>
+        </div>
+
+        <div style="margin-bottom:2rem">
+            <label class="review-form-label">La tua parola</label>
+            <textarea class="review-input" rows="4"
+                      placeholder="Cosa ti ha lasciato questo oggetto…"
+                      @bind="newReviewComment"></textarea>
+        </div>
+
+        <button class="btn-acquire" @onclick="SubmitReview">
+            Lascia traccia <span class="arrow">→</span>
+        </button>
+
+        <div style="margin-top:3rem;padding:2rem;border:1px solid rgba(201,160,122,0.18);border-radius:4px;text-align:center">
+            <p class="text-fell" style="font-size:1.05rem;color:var(--leather);opacity:0.55">
+                Nessuna parola ancora.<br />Sii il primo a lasciare la tua impronta.
+            </p>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string Id { get; set; } = "";
+
+    private ProductDto? product;
+    private SkuDto?     selectedSku;
+    private bool        isDropdownOpen    = false;
+    private bool        isAddingToCart    = false;
+    private int         newReviewRate     = 5;
+    private string      newReviewComment  = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            product = await Http.GetFromJsonAsync<ProductDto>($"Products/{Id}");
+            if (product?.StockKeepingUnits?.Any() == true)
+                selectedSku = product.StockKeepingUnits.First();
+        }
+        catch (Exception ex) { Console.WriteLine($"Errore: {ex.Message}"); }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            await JS.InvokeVoidAsync("archetipo.initDetail");
+    }
+
+    private void ToggleDropdown() => isDropdownOpen = !isDropdownOpen;
+
+    private void SelectSku(SkuDto sku)
+    {
+        selectedSku    = sku;
+        isDropdownOpen = false;
+    }
+
+    private async Task AddToCart()
+    {
+        if (selectedSku is null || product is null || selectedSku.Stock == 0) return;
+        isAddingToCart = true;
+        var label = selectedSku.Features.FirstOrDefault().Value ?? "Standard";
+        await CartService.AddItemAsync(selectedSku.Id, product.Id, product.Name, label, selectedSku.Price, product.ImageUrl);
+        isAddingToCart = false;
+        NavManager.NavigateTo("/carrello");
+    }
+
+    private void SubmitReview()
+    {
+        Console.WriteLine($"Recensione: {newReviewRate}★ — {newReviewComment}");
+        newReviewComment = "";
+        newReviewRate    = 5;
+    }
+}

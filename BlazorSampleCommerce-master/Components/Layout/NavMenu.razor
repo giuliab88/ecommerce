@@ -1,0 +1,197 @@
+@rendermode InteractiveServer
+@using BlazorSampleCommerce.DTOs
+@inject AuthService AuthService
+@inject Services.SearchService SearchService
+@inject Services.CartService CartService
+@inject NavigationManager NavManager
+@inject HttpClient Http
+@inject IJSRuntime JS
+@implements IDisposable
+
+<nav class="nav-archetipo" id="main-nav">
+    <a class="nav-brand" href="/">Archetipo</a>
+
+    <div class="nav-links">
+        <!-- Filtro emozioni / brand -->
+        <div style="position:relative">
+            <button class="nav-link-item" @onclick="ToggleBrands">
+                @(string.IsNullOrEmpty(SearchService.SelectedBrand) ? "Collezione" : SearchService.SelectedBrand)
+            </button>
+            @if (isBrandsOpen)
+            {
+                <div class="nav-dropdown" @onclick:stopPropagation>
+                    <button class="nav-dropdown-item" @onclick='() => SelectBrand("")'>tutto il catalogo</button>
+                    @if (brands == null)
+                    {
+                        <div style="padding:0.5rem 1rem;font-family:var(--font-sans);font-size:0.78rem;opacity:0.45">caricamento…</div>
+                    }
+                    else
+                    {
+                        @foreach (var b in brands)
+                        {
+                            <button class="nav-dropdown-item" @onclick='() => SelectBrand(b)'>@b</button>
+                        }
+                    }
+                </div>
+            }
+        </div>
+
+        <a href="/carrello" class="nav-cart-btn">
+            <span>Carrello</span>
+            @if (CartService.TotalItems > 0)
+            {
+                <span class="nav-cart-badge">@CartService.TotalItems</span>
+            }
+        </a>
+
+        @if (!AuthService.IsLoggedIn)
+        {
+            <button class="nav-link-item" @onclick="OpenModal">Accedi</button>
+            <a href="/register" class="nav-btn-join">Registrati</a>
+        }
+        else
+        {
+            <div style="position:relative">
+                <button class="nav-link-item" @onclick="ToggleUserMenu">
+                    @AuthService.CurrentUser!.Name
+                </button>
+                @if (isUserMenuOpen)
+                {
+                    <div class="nav-dropdown nav-dropdown-right" @onclick:stopPropagation>
+                        <a class="nav-dropdown-item" href="/profile"     @onclick="CloseAll">Profilo</a>
+                        <a class="nav-dropdown-item" href="/my-products" @onclick="CloseAll">Le mie opere</a>
+                        <button class="nav-dropdown-item danger" @onclick="Logout">Esci</button>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</nav>
+
+<!-- Overlay chiusura dropdown -->
+@if (isBrandsOpen || isUserMenuOpen)
+{
+    <div style="position:fixed;inset:0;z-index:90;" @onclick="CloseAll"></div>
+}
+
+<!-- Login Modal -->
+@if (showModal)
+{
+    <div class="modal-archetipo" @onclick="CloseModal">
+        <div class="modal-box" @onclick:stopPropagation>
+            <button class="modal-close" @onclick="CloseModal">✕</button>
+            <div class="modal-title">Bentornato/a</div>
+            <div class="modal-subtitle">accedi al tuo spazio</div>
+
+            <label class="review-form-label">Email</label>
+            <input type="email" class="modal-input" @bind="emailField" placeholder="nome@esempio.it" />
+
+            <label class="review-form-label">Password</label>
+            <input type="password" class="modal-input" @bind="passwordField" placeholder="••••••••" />
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="modal-error">@errorMessage</div>
+            }
+
+            <button class="btn-acquire" style="width:100%;justify-content:center" @onclick="ConfirmLogin" disabled="@isLoggingIn">
+                @if (isLoggingIn)
+                {
+                    <span>…</span>
+                }
+                else
+                {
+                    <span>Entra</span>
+                    <span class="arrow">→</span>
+                }
+            </button>
+
+            <div style="text-align:center;margin-top:1rem;font-family:var(--font-sans);font-size:0.8rem;opacity:0.5">
+                <a href="/recupera-password" @onclick="CloseModal" style="text-decoration:underline;text-underline-offset:3px">Password dimenticata?</a>
+            </div>
+
+            <div style="text-align:center;margin-top:0.75rem;font-family:var(--font-sans);font-size:0.8rem;opacity:0.5">
+                Non hai un account?
+                <a href="/register" @onclick="CloseModal" style="text-decoration:underline;text-underline-offset:3px;margin-left:0.25rem">Registrati</a>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool isBrandsOpen   = false;
+    private bool isUserMenuOpen = false;
+    private bool showModal      = false;
+    private bool isLoggingIn    = false;
+    private string emailField    = "";
+    private string passwordField = "";
+    private string errorMessage  = "";
+    private List<string>? brands;
+
+    protected override void OnInitialized()
+    {
+        CartService.OnCartChanged += StateHasChanged;
+        AuthService.OnAuthStateChanged += OnAuthChanged;
+    }
+
+    public void Dispose()
+    {
+        CartService.OnCartChanged -= StateHasChanged;
+        AuthService.OnAuthStateChanged -= OnAuthChanged;
+    }
+
+    private void OnAuthChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var products = await Http.GetFromJsonAsync<List<ProductDto>>("Products");
+            brands = products?
+                .Select(p => p.Brand)
+                .Where(b => !string.IsNullOrEmpty(b))
+                .Distinct()
+                .OrderBy(b => b)
+                .ToList();
+        }
+        catch { brands = new List<string>(); }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            await JS.InvokeVoidAsync("archetipo.initNav");
+    }
+
+    void ToggleBrands()   { isBrandsOpen   = !isBrandsOpen;  isUserMenuOpen = false; }
+    void ToggleUserMenu() { isUserMenuOpen = !isUserMenuOpen; isBrandsOpen   = false; }
+    void CloseAll()       { isBrandsOpen   = isUserMenuOpen  = false; }
+    void OpenModal()      { CloseAll(); showModal = true; }
+    void CloseModal()     { showModal = false; errorMessage = ""; }
+
+    async Task SelectBrand(string brand)
+    {
+        isBrandsOpen = false;
+        SearchService.UpdateBrand(brand);
+        NavManager.NavigateTo("/");
+    }
+
+    async Task ConfirmLogin()
+    {
+        errorMessage = "";
+        isLoggingIn  = true;
+        var ok = await AuthService.LoginAsync(emailField, passwordField);
+        isLoggingIn  = false;
+        if (ok) { CloseModal(); emailField = passwordField = ""; }
+        else errorMessage = "Email o password non validi.";
+    }
+
+    async Task Logout()
+    {
+        await AuthService.LogoutAsync();
+        CloseAll();
+    }
+}

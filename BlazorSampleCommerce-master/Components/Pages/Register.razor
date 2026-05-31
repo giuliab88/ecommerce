@@ -1,0 +1,167 @@
+@page "/register"
+@rendermode InteractiveServer
+@inject HttpClient Http
+@inject AuthService AuthService
+@inject NavigationManager NavManager
+@using BlazorSampleCommerce.DTOs
+
+<PageTitle>Crea un account — Archetipo</PageTitle>
+
+<div class="register-wrap">
+
+    <div class="register-left">
+        <div class="register-left-inner">
+            <a href="/" class="detail-back-link">← torna al catalogo</a>
+            <div class="register-heading">
+                <div class="detail-emotion-label">benvenuto</div>
+                <h1 class="register-title">Crea il tuo<br />spazio</h1>
+                <p class="register-subtitle">ogni cosa fatta a mano<br />ha bisogno di chi la riconosca</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="register-right">
+        <div class="register-form-wrap">
+
+            <div class="register-field">
+                <label class="review-form-label">Nome completo</label>
+                <input type="text" class="modal-input" @bind="name" placeholder="Mario Rossi" />
+            </div>
+
+            <div class="register-field">
+                <label class="review-form-label">Email</label>
+                <input type="email" class="modal-input" @bind="email" placeholder="mario@esempio.it" />
+            </div>
+
+            <div class="register-field">
+                <label class="review-form-label">Password</label>
+                <input type="password" class="modal-input" @bind="password" placeholder="••••••••" />
+            </div>
+
+            <div class="register-field">
+                <label class="review-form-label">Conferma password</label>
+                <input type="password" class="modal-input" @bind="confirmPassword" placeholder="••••••••" />
+            </div>
+
+            <div class="register-seller-toggle" @onclick="() => isSeller = !isSeller">
+                <div class="seller-toggle-track @(isSeller ? "active" : "")">
+                    <div class="seller-toggle-thumb"></div>
+                </div>
+                <span class="seller-toggle-label">voglio vendere le mie opere</span>
+            </div>
+
+            @if (isSeller)
+            {
+                <div class="register-seller-fields">
+                    <div class="register-field">
+                        <label class="review-form-label">Partita IVA</label>
+                        <input type="text" class="modal-input" @bind="iva" placeholder="12345678901" maxlength="11" />
+                    </div>
+                    <div class="register-field">
+                        <label class="review-form-label">Nome azienda / studio</label>
+                        <input type="text" class="modal-input" @bind="tradingName" placeholder="Studio Rossi" />
+                    </div>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="modal-error" style="margin-bottom:1rem">@errorMessage</div>
+            }
+
+            <button class="btn-acquire" style="width:100%;justify-content:center;margin-top:0.5rem"
+                    @onclick="HandleRegister" disabled="@isSubmitting">
+                @if (isSubmitting)
+                {
+                    <span>…</span>
+                }
+                else
+                {
+                    <span>Crea account</span>
+                    <span class="arrow">→</span>
+                }
+            </button>
+
+            <p class="register-login-hint">
+                Hai già un account?
+                <button class="register-link-btn" @onclick="OpenLogin">Accedi</button>
+            </p>
+
+        </div>
+    </div>
+
+</div>
+
+@code {
+    private string name = "";
+    private string email = "";
+    private string password = "";
+    private string confirmPassword = "";
+    private bool isSeller = false;
+    private string iva = "";
+    private string tradingName = "";
+    private string errorMessage = "";
+    private bool isSubmitting = false;
+
+    private void OpenLogin()
+    {
+        NavManager.NavigateTo("/");
+    }
+
+    private async Task HandleRegister()
+    {
+        errorMessage = "";
+
+        if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
+            errorMessage = "Nome, email e password sono obbligatori.";
+            return;
+        }
+
+        if (password != confirmPassword)
+        {
+            errorMessage = "Le password non coincidono.";
+            return;
+        }
+
+        if (isSeller && (string.IsNullOrWhiteSpace(iva) || string.IsNullOrWhiteSpace(tradingName)))
+        {
+            errorMessage = "Partita IVA e nome azienda sono obbligatori per i venditori.";
+            return;
+        }
+
+        isSubmitting = true;
+
+        var dto = new
+        {
+            Name = name,
+            Email = email,
+            Password = password,
+            Seller = isSeller,
+            Iva = isSeller ? iva : null as string,
+            TradingName = isSeller ? tradingName : null as string
+        };
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("User", dto);
+            if (response.IsSuccessStatusCode)
+            {
+                await AuthService.LoginAsync(email, password);
+                NavManager.NavigateTo("/");
+            }
+            else
+            {
+                errorMessage = "Registrazione fallita. Controlla i dati inseriti.";
+            }
+        }
+        catch
+        {
+            errorMessage = "Errore di connessione. Riprova.";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+}

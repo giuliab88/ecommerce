@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "Nuovo profilo",
+    "Projects": [
+      {
+        "Path": "BlazorSampleCommerce-master\\BlazorSampleCommerce.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "SampleCommerce-master\\SampleCommerce.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

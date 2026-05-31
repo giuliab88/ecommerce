@@ -1,0 +1,53 @@
+@rendermode InteractiveServer
+@inject NavigationManager Nav
+
+<div class="card-archetipo" @onclick="Navigate">
+    <div class="card-img-wrap">
+        @if (!string.IsNullOrEmpty(ImageUrl))
+        {
+            <img src="@ImageUrl" alt="@Name" class="card-img" />
+        }
+        else
+        {
+            <div class="card-img-placeholder">
+                <svg width="56" height="72" viewBox="0 0 56 72" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.22">
+                    <rect x="8" y="16" width="40" height="50" rx="1.5" stroke="#3d2414" stroke-width="1"/>
+                    <line x1="8" y1="28" x2="48" y2="28" stroke="#3d2414" stroke-width="0.6"/>
+                    <circle cx="28" cy="48" r="9" stroke="#3d2414" stroke-width="0.6"/>
+                    <line x1="16" y1="6"  x2="40" y2="6"  stroke="#c9a07a" stroke-width="1.5" stroke-linecap="round"/>
+                    <line x1="22" y1="1"  x2="34" y2="1"  stroke="#c9a07a" stroke-width="0.8" stroke-linecap="round"/>
+                    <path d="M22 36 L26 43 L23 50 L29 57" stroke="#c9a07a" stroke-width="0.7" stroke-linecap="round"/>
+                </svg>
+            </div>
+        }
+        @if (!string.IsNullOrEmpty(Brand))
+        {
+            <span class="card-emotion-tag">@Brand</span>
+        }
+    </div>
+
+    <div class="card-body-archetipo">
+        <div class="card-name">@Name</div>
+        @if (!string.IsNullOrEmpty(Description))
+        {
+            <div class="card-excerpt">
+                @(Description.Length > 60 ? Description[..60] + "…" : Description)
+            </div>
+        }
+        <div class="card-footer-row">
+            <div class="card-price">€ @Price.ToString("0.00")</div>
+            <span class="card-discover">Scopri →</span>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string  Id          { get; set; } = "";
+    [Parameter] public string  Name        { get; set; } = "";
+    [Parameter] public string  Description { get; set; } = "";
+    [Parameter] public string  Brand       { get; set; } = "";
+    [Parameter] public string? ImageUrl    { get; set; }
+    [Parameter] public decimal Price       { get; set; }
+
+    void Navigate() => Nav.NavigateTo($"/product/{Id}");
+}

@@ -1,0 +1,38 @@
+@inherits LayoutComponentBase
+@inject Services.AuthService AuthService
+@inject Services.CartService CartService
+
+<div class="layout-wrap">
+    <NavMenu />
+    <main class="layout-main">
+        @Body
+    </main>
+    <footer class="footer-archetipo">
+        <div class="footer-inner">
+            <div>
+                <div class="footer-brand-text">Archetipo</div>
+                <div class="footer-tagline">Ogni oggetto porta un'emozione.</div>
+            </div>
+            <div class="footer-links">
+                <a href="/" class="footer-link">Collezione</a>
+                <a href="/register" class="footer-link">Registrati</a>
+            </div>
+            <div class="footer-copy">© 2025 Archetipo</div>
+        </div>
+    </footer>
+</div>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await AuthService.RestoreSessionAsync();
+        await CartService.InitializeAsync();
+    }
+}
+
+<div id="blazor-error-ui">
+    Errore di connessione.
+    <a href="" class="reload">Ricarica</a>
+    <a class="dismiss">✕</a>
+</div>

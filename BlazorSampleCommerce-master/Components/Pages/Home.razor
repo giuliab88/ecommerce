@@ -1,0 +1,199 @@
+@page "/"
+@using BlazorSampleCommerce.DTOs
+@inject HttpClient Http
+@rendermode InteractiveServer
+@implements IDisposable
+@inject Services.SearchService SearchService
+@inject IJSRuntime JS
+
+<PageTitle>Archetipo — Oggetti carichi di significato</PageTitle>
+
+<!-- ══════════════════════════════════════════
+     HERO
+     ══════════════════════════════════════════ -->
+<section class="hero-section">
+    <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 55%,var(--parchment) 100%);pointer-events:none;z-index:1"></div>
+
+    <div style="position:relative;z-index:2;width:100%">
+        <div style="margin-bottom:2.5rem">
+            <span class="text-caps" style="opacity:0.38">Milano · Artigianato emotivo · Est. 2025</span>
+        </div>
+
+        <div class="hero-word-wrap">
+            <span class="hero-title hero-word" style="display:block">Arche</span>
+        </div>
+        <div class="hero-word-wrap">
+            <span class="hero-title hero-word" style="display:block;padding-left:clamp(1.5rem,8vw,12rem);color:var(--sand)">tipo</span>
+        </div>
+
+        <div class="hero-sub" style="margin-top:3rem;display:flex;align-items:center;gap:2.5rem;flex-wrap:wrap">
+            <p class="text-fell" style="font-size:clamp(0.9rem,1.5vw,1.2rem);color:var(--leather);opacity:0.78;max-width:34ch;line-height:1.9">
+                Oggetti imperfetti, carichi di significato.<br />Ogni pezzo è un'emozione.
+            </p>
+            <div style="height:1px;background:rgba(201,160,122,0.3);width:5rem"></div>
+            <a href="#collezione" class="btn-acquire">
+                Scopri <span class="arrow">↓</span>
+            </a>
+        </div>
+    </div>
+
+    <div style="position:absolute;right:2.5rem;top:50%;transform:translateY(-50%);writing-mode:vertical-rl;font-family:var(--font-sans);font-size:0.6rem;letter-spacing:0.45em;text-transform:uppercase;opacity:0.18;z-index:2;user-select:none">
+        Primavera · 2025
+    </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     MANIFESTO
+     ══════════════════════════════════════════ -->
+<section class="manifesto-section">
+    <span class="text-caps" style="opacity:0.35;display:block;margin-bottom:2rem">Il nostro credo</span>
+    <p class="manifesto-line reveal">Non vendiamo oggetti.</p>
+    <p class="manifesto-line reveal" style="padding-left:3rem">Vendiamo quello che resta</p>
+    <p class="manifesto-line reveal" style="padding-left:6rem">dopo che tutto è passato.</p>
+    <p class="manifesto-line reveal" style="padding-left:2rem;margin-top:2rem">Ogni crepa racconta una storia.</p>
+    <p class="manifesto-line reveal" style="padding-left:5rem">Ogni imperfezione è voluta.</p>
+</section>
+
+<!-- ══════════════════════════════════════════
+     FILTRI EMOZIONE
+     ══════════════════════════════════════════ -->
+<div id="collezione" class="emotion-filters">
+    <span class="text-caps" style="opacity:0.35;width:100%;margin-bottom:0.25rem;display:block">filtra per emozione</span>
+
+    <button class="emotion-pill @(string.IsNullOrEmpty(SearchService.SelectedBrand) ? "active" : "")"
+            @onclick='() => FilterBy("")'>tutto il catalogo</button>
+
+    @if (allProducts != null)
+    {
+        @foreach (var brand in allProducts
+            .Select(p => p.Brand)
+            .Where(b => !string.IsNullOrEmpty(b))
+            .Distinct()
+            .OrderBy(b => b))
+        {
+            <button class="emotion-pill @(SearchService.SelectedBrand == brand ? "active" : "")"
+                    @onclick='() => FilterBy(brand)'>@brand</button>
+        }
+    }
+</div>
+
+<!-- ══════════════════════════════════════════
+     OPERE
+     ══════════════════════════════════════════ -->
+<section class="products-archetipo" style="padding-top:3.5rem">
+    @if (allProducts == null)
+    {
+        <div class="loading-archetipo">
+            <span class="text-caps" style="opacity:0.38">caricamento opere</span>
+            <div style="display:flex;gap:0.5rem;margin-top:1rem">
+                <div class="loading-dot"></div>
+                <div class="loading-dot" style="animation-delay:0.18s"></div>
+                <div class="loading-dot" style="animation-delay:0.36s"></div>
+            </div>
+        </div>
+    }
+    else if (!PaginatedItems.Any())
+    {
+        <div style="padding:7rem 0;text-align:center">
+            <div class="section-title" style="opacity:0.15">Vuoto</div>
+            <p class="text-fell" style="margin-top:1.5rem;color:var(--walnut);font-size:1.1rem;opacity:0.65">
+                Nessuna opera corrisponde a questa emozione.
+            </p>
+            <button class="emotion-pill" @onclick='() => FilterBy("")' style="margin-top:2rem">× tutto il catalogo</button>
+        </div>
+    }
+    else
+    {
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:2.5rem;border-bottom:1px solid rgba(201,160,122,0.18);margin-bottom:3rem">
+            <div>
+                @if (!string.IsNullOrEmpty(SearchService.SelectedBrand))
+                {
+                    <span class="text-caps" style="opacity:0.42">@SearchService.SelectedBrand · </span>
+                }
+                <span class="text-caps" style="opacity:0.22">@FilteredCount @(FilteredCount == 1 ? "opera" : "opere")</span>
+            </div>
+            @if (!string.IsNullOrEmpty(SearchService.SelectedBrand))
+            {
+                <button class="emotion-pill" @onclick='() => FilterBy("")' style="font-size:0.85rem">× rimuovi</button>
+            }
+        </div>
+
+        <div class="products-irregular">
+            @foreach (var item in PaginatedItems)
+            {
+                var price = item.StockKeepingUnits.Any()
+                    ? item.StockKeepingUnits.Min(s => s.Price)
+                    : 0m;
+                <div class="product-item">
+                    <ProductCard Id="@item.Id.ToString()"
+                                 Name="@item.Name"
+                                 Description="@item.Description"
+                                 Brand="@item.Brand"
+                                 ImageUrl="@item.ImageUrl"
+                                 Price="@price" />
+                </div>
+            }
+        </div>
+
+        @if (TotalPages > 1)
+        {
+            <div style="display:flex;justify-content:center;gap:0.75rem;margin-top:5rem;padding-top:3rem;border-top:1px solid rgba(201,160,122,0.18)">
+                @for (int p = 1; p <= TotalPages; p++)
+                {
+                    var page = p;
+                    <button class="emotion-pill @(currentPage == page ? "active" : "")"
+                            @onclick="() => ChangePage(page)" style="min-width:3rem;text-align:center">@(page)</button>
+                }
+            </div>
+        }
+    }
+</section>
+
+<!-- ══════════════════════════════════════════
+     STATEMENT FINALE
+     ══════════════════════════════════════════ -->
+<section style="padding:9rem 2.5rem;text-align:center;overflow:hidden">
+    <div style="width:50px;height:1px;background:var(--sand);margin:0 auto 2rem"></div>
+    <p class="section-title reveal" style="color:var(--cream)">
+        Fatto a mano.<br />
+        <em style="color:var(--bark);font-style:inherit">Carico di senso.</em>
+    </p>
+</section>
+
+@code {
+    private List<ProductDto>? allProducts;
+    private int currentPage = 1;
+    private const int pageSize = 8;
+
+    private IEnumerable<ProductDto> PaginatedItems =>
+        (string.IsNullOrEmpty(SearchService.SelectedBrand)
+            ? allProducts
+            : allProducts?.Where(p => p.Brand == SearchService.SelectedBrand))
+        ?.Skip((currentPage - 1) * pageSize)
+        .Take(pageSize) ?? Enumerable.Empty<ProductDto>();
+
+    private int FilteredCount =>
+        (string.IsNullOrEmpty(SearchService.SelectedBrand)
+            ? allProducts?.Count
+            : allProducts?.Count(p => p.Brand == SearchService.SelectedBrand)) ?? 0;
+
+    private int TotalPages => (int)Math.Ceiling((double)FilteredCount / pageSize);
+
+    protected override async Task OnInitializedAsync()
+    {
+        SearchService.OnSearchChanged += HandleSearchChanged;
+        try   { allProducts = await Http.GetFromJsonAsync<List<ProductDto>>("Products"); }
+        catch (Exception ex) { Console.WriteLine($"Errore: {ex.Message}"); }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            await JS.InvokeVoidAsync("archetipo.initHome");
+    }
+
+    private void HandleSearchChanged() { currentPage = 1; StateHasChanged(); }
+    private void FilterBy(string brand) { SearchService.UpdateBrand(brand); currentPage = 1; }
+    private void ChangePage(int page) => currentPage = page;
+    public void Dispose() => SearchService.OnSearchChanged -= HandleSearchChanged;
+}

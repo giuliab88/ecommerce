@@ -1,0 +1,9 @@
+Login venditore
+---------------
+Email:    studio@archetipo.it
+Password: archetipo2025
+
+Avvio
+-----
+Aprire ECommerce.slnx con Visual Studio.
+Tasto destro sulla soluzione > Imposta progetti di avvio > Progetti di avvio multipli > entrambi su "Avvia".

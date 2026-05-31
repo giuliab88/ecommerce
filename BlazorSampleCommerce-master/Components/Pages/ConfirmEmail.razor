@@ -1,0 +1,87 @@
+@page "/conferma-email"
+@rendermode InteractiveServer
+@inject HttpClient Http
+@inject NavigationManager NavManager
+
+<PageTitle>Conferma email — Archetipo</PageTitle>
+
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--parchment);padding:2rem">
+    <div style="text-align:center;max-width:420px">
+        <div class="detail-emotion-label" style="margin-bottom:1.5rem">
+            @(checking ? "verifica" : (confirmed ? "confermato" : "errore"))
+        </div>
+
+        @if (checking)
+        {
+            <div style="display:flex;gap:0.5rem;justify-content:center;margin-top:1rem">
+                <div class="loading-dot"></div>
+                <div class="loading-dot" style="animation-delay:0.18s"></div>
+                <div class="loading-dot" style="animation-delay:0.36s"></div>
+            </div>
+        }
+        else if (confirmed)
+        {
+            <h1 style="font-family:var(--font-display);font-size:clamp(2.5rem,5vw,4rem);font-weight:300;color:var(--bark);line-height:0.95;letter-spacing:-0.02em;margin-bottom:1.5rem">
+                Email<br />confermata
+            </h1>
+            <p style="font-family:var(--font-fell);font-style:italic;font-size:1.05rem;color:var(--leather);line-height:1.9;opacity:0.8;margin-bottom:2rem">
+                Il tuo account è attivo.<br />Puoi accedere e iniziare a esplorare.
+            </p>
+            <a href="/" class="btn-acquire" style="display:inline-flex;text-decoration:none">
+                Vai alla collezione <span class="arrow" style="margin-left:0.85rem">→</span>
+            </a>
+        }
+        else
+        {
+            <h1 style="font-family:var(--font-display);font-size:clamp(2rem,4vw,3.5rem);font-weight:300;color:var(--bark);line-height:0.95;letter-spacing:-0.02em;margin-bottom:1.5rem">
+                Link non valido
+            </h1>
+            <p style="font-family:var(--font-fell);font-style:italic;font-size:1.05rem;color:var(--leather);line-height:1.9;opacity:0.7;margin-bottom:2rem">
+                @errorMessage
+            </p>
+            <a href="/" class="detail-back-link" style="display:inline-block">← torna al catalogo</a>
+        }
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery] public string? token { get; set; }
+
+    private bool checking = true;
+    private bool confirmed = false;
+    private string errorMessage = "Il link non è più valido o è già stato utilizzato.";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        if (string.IsNullOrEmpty(token))
+        {
+            checking = false;
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            var response = await Http.GetAsync($"Auth/confirm-email?token={token}");
+            confirmed = response.IsSuccessStatusCode;
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadFromJsonAsync<ErrorBody>();
+                errorMessage = body?.Message ?? errorMessage;
+            }
+        }
+        catch
+        {
+            errorMessage = "Errore di connessione. Riprova più tardi.";
+        }
+        finally
+        {
+            checking = false;
+            StateHasChanged();
+        }
+    }
+
+    private record ErrorBody(string Message);
+}

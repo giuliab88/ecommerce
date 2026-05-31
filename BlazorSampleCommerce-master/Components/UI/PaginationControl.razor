@@ -1,0 +1,34 @@
+@rendermode InteractiveServer
+
+@if (TotalPages > 1)
+{
+    <nav aria-label="Navigazione pagine" class="mt-5">
+        <ul class="pagination justify-content-center">
+            <li class="page-item @(CurrentPage == 1 ? "disabled" : "")">
+                <button class="page-link" @onclick="() => OnPageChange.InvokeAsync(CurrentPage - 1)">
+                    &larr; Prec
+                </button>
+            </li>
+
+            @for (int i = 1; i <= TotalPages; i++)
+            {
+                var p = i;
+                <li class="page-item @(CurrentPage == p ? "active" : "")">
+                    <button class="page-link" @onclick="() => OnPageChange.InvokeAsync(p)">@p</button>
+                </li>
+            }
+
+            <li class="page-item @(CurrentPage == TotalPages ? "disabled" : "")">
+                <button class="page-link" @onclick="() => OnPageChange.InvokeAsync(CurrentPage + 1)">
+                    Succ &rarr;
+                </button>
+            </li>
+        </ul>
+    </nav>
+}
+
+@code {
+    [Parameter] public int CurrentPage { get; set; }
+    [Parameter] public int TotalPages  { get; set; }
+    [Parameter] public EventCallback<int> OnPageChange { get; set; }
+}

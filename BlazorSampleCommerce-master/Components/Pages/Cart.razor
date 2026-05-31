@@ -1,0 +1,76 @@
+@page "/carrello"
+@rendermode InteractiveServer
+@inject CartService CartService
+@inject NavigationManager NavManager
+@inject AuthService AuthService
+
+<PageTitle>Carrello — Archetipo</PageTitle>
+
+<div class="cart-page">
+    <h1 class="cart-title">Il tuo carrello</h1>
+
+    @if (!CartService.Items.Any())
+    {
+        <div class="cart-empty">
+            <p class="text-fell">Nessuna opera selezionata.</p>
+            <a href="/" class="detail-back-link" style="margin-top:1.5rem;display:inline-block">← Torna alla collezione</a>
+        </div>
+    }
+    else
+    {
+        <div class="cart-list">
+            @foreach (var item in CartService.Items)
+            {
+                <div class="cart-item">
+                    @if (!string.IsNullOrEmpty(item.ImageUrl))
+                    {
+                        <img src="@item.ImageUrl" alt="@item.ProductName" class="cart-item-img" />
+                    }
+                    else
+                    {
+                        <div class="cart-item-img cart-item-img--placeholder"></div>
+                    }
+                    <div class="cart-item-info">
+                        <span class="cart-item-name">@item.ProductName</span>
+                        @if (!string.IsNullOrEmpty(item.SkuLabel))
+                        {
+                            <span class="cart-item-sku">@item.SkuLabel</span>
+                        }
+                    </div>
+
+                    <div class="cart-qty-controls">
+                        <button class="cart-qty-btn" @onclick="async () => await CartService.UpdateQuantityAsync(item.SkuId, item.Quantity - 1)">−</button>
+                        <span class="cart-qty-value">@item.Quantity</span>
+                        <button class="cart-qty-btn" @onclick="async () => await CartService.UpdateQuantityAsync(item.SkuId, item.Quantity + 1)">+</button>
+                    </div>
+
+                    <div class="cart-item-price">€ @item.Subtotal.ToString("0.00")</div>
+
+                    <button class="cart-remove-btn" @onclick="async () => await CartService.RemoveItemAsync(item.SkuId)" title="Rimuovi">✕</button>
+                </div>
+            }
+        </div>
+
+        <div class="cart-footer">
+            <div class="cart-total">
+                <span class="text-caps" style="opacity:0.5">Totale</span>
+                <span class="cart-total-price">€ @CartService.Total.ToString("0.00")</span>
+            </div>
+
+            <div class="cart-actions">
+                <a href="/" class="detail-back-link">← Continua a sfogliare</a>
+
+                @if (!AuthService.IsLoggedIn)
+                {
+                    <p class="cart-login-hint">Accedi per completare l'acquisto.</p>
+                }
+                else
+                {
+                    <button class="btn-acquire" @onclick='() => NavManager.NavigateTo("/checkout")'>
+                        Procedi <span class="arrow">→</span>
+                    </button>
+                }
+            </div>
+        </div>
+    }
+</div>

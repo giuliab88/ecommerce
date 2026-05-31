@@ -1,0 +1,12 @@
+<Solution>
+  <StartupProjects>
+    <Project Path="SampleCommerce-master/SampleCommerce.csproj" />
+    <Project Path="BlazorSampleCommerce-master/BlazorSampleCommerce.csproj" />
+  </StartupProjects>
+  <Folder Name="/BlazorSampleCommerce-master/">
+    <Project Path="BlazorSampleCommerce-master/BlazorSampleCommerce.csproj" />
+  </Folder>
+  <Folder Name="/SampleCommerce-master/">
+    <Project Path="SampleCommerce-master/SampleCommerce.csproj" />
+  </Folder>
+</Solution>

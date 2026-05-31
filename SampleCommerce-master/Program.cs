@@ -73,6 +73,12 @@ namespace SampleCommerce
             MapsterConfig.Configure();
             var app = builder.Build();
 
+            using (var scope = app.Services.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<EcommerceDbContext>();
+                DbInitializer.Initialize(context);
+            }
+
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();

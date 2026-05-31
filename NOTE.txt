@@ -1,3 +1,9 @@
+Database (da fare una volta sola)
+----------------------------------
+Aprire SSMS, connettersi a (localdb)\MSSQLLocalDB ed eseguire in ordine:
+1. SampleCommerce-master/SQL/SampleEcommerceDB_creation.sql
+2. SampleCommerce-master/SQL/Seed.sql
+
 Login venditore
 ---------------
 Email:    studio@archetipo.it

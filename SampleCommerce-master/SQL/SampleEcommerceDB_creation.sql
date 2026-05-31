@@ -11,6 +11,10 @@ CREATE TABLE Users (
 	Seller BIT NOT NULL DEFAULT 0,
 	Iva NVARCHAR(11),
 	TradingName NVARCHAR(100),
+	EmailConfirmed BIT NOT NULL DEFAULT 0,
+	EmailConfirmationToken NVARCHAR(MAX) NULL,
+	PasswordResetToken NVARCHAR(MAX) NULL,
+	PasswordResetTokenExpiry DATETIME NULL,
 );
 GO
 CREATE TABLE Addresses(

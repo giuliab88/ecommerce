@@ -1,8 +1,9 @@
 # Cartella immagini originali (già copiate in BlazorSampleCommerce-master/wwwroot/images)
 immagini per ecomm/
 
-# Visual Studio solution user file
+# Visual Studio solution user files
 *.slnx.user
+*.slnLaunch.user
 
 # Visual Studio cache
 .vs/
